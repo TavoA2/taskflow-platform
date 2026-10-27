@@ -8,6 +8,19 @@
 - Environment: Windows 11 + WSL2 (Ubuntu 26.04, kernel 6.18.33.2), Docker Engine 29.6.2, Compose 5.3.1, Go 1.27.3
 - Raw output: [phase-1-app-in-containers.log](phase-1-app-in-containers.log)
 
+> **History rewrite note (2026-10-27, before first publication).** Both repositories' histories were rewritten
+> to replace the personal author email with the GitHub noreply address. Only author/committer emails changed;
+> trees, author names, dates and messages were verified identical, so commit hashes changed but content did not.
+> The evidence run above used the pre-rewrite hash; the raw log is kept unedited.
+>
+> | Pre-rewrite (cited above and in the log) | Published | Git tree (identical) |
+> |------------------------------------------|-----------|----------------------|
+> | `d97bb2a1dd65d1809c5b05bed2d3b7b3fd707116` (images `d97bb2a1dd65`) | `62bd90751f4067986053b18d296dfda5834270bd` | `b6387a7f360d761aad7f21dcbd4a943d4126af8d` |
+> | `bbdf882f6ac83c7f611788a32bb94fde6bf0606f` (scripts) | `d121db1939bda2c97b952fdcf8b1065e8acd2761` | `82a91cf044be48439bb4784f3ea6a84544c736d8` |
+>
+> Check: `git rev-parse 62bd907^{tree}` prints the tree above. Images built from `62bd907` contain the same
+> source; their tag will differ (`62bd90751f40`).
+
 ## Exit criteria
 
 | Criterion | Evidence | Result |
