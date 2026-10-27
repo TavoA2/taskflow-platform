@@ -36,12 +36,15 @@ its schema migrations and container health checks (distroless images have no she
 
 ## Consequences
 
-- Positive: image well under 20 MB, sub-second startup, small CVE surface, explicit code for probes and
+- Positive: compressed image well under 20 MB, sub-second startup, small CVE surface, explicit code for probes and
   graceful shutdown (useful to explain in interviews).
 - Negative: new language for the author; less "magic" than Actuator means health, metrics and shutdown
   are written and tested by hand.
 
 ## Verification
 
-- `docker image ls` shows the API image under 20 MB; `docker image inspect` shows a non-root user.
+- Compressed image size (what a node pulls; `docker image inspect --format '{{.Size}}'`) under 20 MB.
+  Note: with Docker's containerd image store, `docker image ls` reports compressed blobs plus unpacked
+  layers, which overstates the size.
+- `docker image inspect` shows a non-root user.
 - Unit tests cover configuration and health handlers (`make test`).
