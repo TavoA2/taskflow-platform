@@ -1,0 +1,81 @@
+# taskflow-platform
+
+Platform repository for **TaskFlow**, a lab that runs a small application on Kubernetes using
+production-style practices: infrastructure as code, CI/CD, GitOps, observability, a security
+baseline and documented reliability exercises.
+
+Application source lives in [`taskflow-app`](https://github.com/TavoA2/taskflow-app).
+This repository holds everything about *where and how* it runs. Why two repos: [ADR-0001](docs/adr/0001-repo-structure.md).
+
+```mermaid
+flowchart LR
+  subgraph app[taskflow-app]
+    code[API + frontend] --> ci[App CI]
+  end
+  ci -->|image :commit-sha| ghcr[(GHCR)]
+  ci -->|bump PR| gitops
+  subgraph platform[taskflow-platform]
+    tf[terraform/] --> infra[Infra pipeline]
+    gitops[gitops/] --> argo[ArgoCD]
+  end
+  argo --> k3d[k3d - local]
+  argo -.->|Phase 9| eks[EKS - ephemeral]
+  infra -.->|Phase 8-9| aws[AWS]
+```
+
+## Status
+
+Statuses are explicit: **Implemented** (exists in the repo), **Tested** (verified, with evidence linked),
+**Planned** (not started). Nothing is claimed beyond its evidence.
+
+| Phase | Scope | Status |
+|-------|-------|--------|
+| 0 | Repos, conventions, pinned tools, ADR-0001/0002, `make bootstrap` | Implemented, Tested ([evidence](docs/test-results/phase-0-workstation.md)) |
+| 1 | App in containers (compose, migrations, tests) | Planned |
+| 2 | App CI (scan, SBOM, GHCR) | Planned |
+| 3 | Kubernetes on k3d (workloads, Gateway API, probes) | Planned |
+| 4 | GitOps with ArgoCD | Planned |
+| 5 | Security baseline (RBAC, NetworkPolicies, secrets) | Planned |
+| 6 | Observability (Prometheus, Grafana, alerts) | Planned |
+| 7 | Reliability exercises with reports | Planned |
+| 8 | Terraform for AWS (plan only) | Planned |
+| 9 | AWS ephemeral sessions (requires explicit budget approval) | Planned |
+
+## Layout
+
+| Path | Purpose | Status |
+|------|---------|--------|
+| `docs/adr/` | Architecture Decision Records | Implemented |
+| `scripts/bootstrap.sh` | Read-only workstation check used by `make bootstrap` | Implemented |
+| `.tool-versions` | Pinned tool versions (asdf/mise format) | Implemented |
+| `gitops/` | Manifests, ArgoCD Applications, overlays `local` / `ec2` / `aws` | Planned (Phase 3-4) |
+| `terraform/` | Modules and `envs/` | Planned (Phase 8) |
+| `docs/test-results/` | Test evidence per phase | Implemented (Phase 0) |
+| `docs/runbooks/` | Operational runbooks | Planned (Phase 7) |
+
+## Prerequisites
+
+Windows 11 + WSL2 (Ubuntu) + Docker Desktop with WSL integration enabled for the distro.
+Work inside the WSL filesystem (`~/code/...`), not under `/mnt/c`.
+
+| Tool | Version | Install (Ubuntu) |
+|------|---------|------------------|
+| docker | managed by Docker Desktop | Docker Desktop > Settings > Resources > WSL integration |
+| git, make, curl, jq | distro packages | `sudo apt-get install -y git make curl jq` |
+| kubectl | see `.tool-versions` | <https://kubernetes.io/docs/tasks/tools/install-kubectl-linux/> |
+| k3d | see `.tool-versions` | `curl -fLo /tmp/k3d https://github.com/k3d-io/k3d/releases/download/v5.9.0/k3d-linux-amd64 && sudo install -m 0755 /tmp/k3d /usr/local/bin/k3d` |
+
+## Usage
+
+```bash
+make help        # list targets
+make bootstrap   # verify the workstation; exit code 0 = READY
+```
+
+## Conventions
+
+- Everything is declared in Git; no manual changes to clusters.
+- Environment differences live only in overlays; no machine-specific paths or names.
+- Images are tagged by commit SHA; `latest` is never used.
+- Secrets are never committed (see `.gitignore`); encrypted secrets only, from Phase 5.
+- Documentation, diagrams (Mermaid) and ADRs are written in English.

@@ -1,0 +1,5 @@
+# Pinned tool versions (asdf/mise format). Checked by `make bootstrap`.
+# Tools are added here in the phase that first needs them (terraform, helm, argocd...).
+# kubectl: must stay within +/-1 minor of the cluster's Kubernetes version (version skew policy).
+kubectl 1.36.3
+k3d 5.9.0

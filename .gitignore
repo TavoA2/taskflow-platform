@@ -1,0 +1,34 @@
+# --- Terraform ---
+.terraform/
+*.tfstate
+*.tfstate.*
+*.tfplan
+tfplan
+crash.log
+crash.*.log
+override.tf
+override.tf.json
+*_override.tf
+*_override.tf.json
+# Variable files may hold environment-specific or secret values; commit *.tfvars.example instead.
+*.tfvars
+*.tfvars.json
+!*.tfvars.example
+# NOTE: .terraform.lock.hcl IS committed: it pins provider versions and checksums.
+
+# --- Kubernetes / secrets (never commit) ---
+kubeconfig
+*.kubeconfig
+.env
+.env.*
+!.env.example
+# Decrypted SOPS files (encrypted *.enc.yaml are committed)
+*.dec.yaml
+*.decrypted.*
+
+# --- Editors / OS ---
+.vscode/
+.idea/
+*.swp
+.DS_Store
+Thumbs.db
