@@ -7,7 +7,9 @@ A decision that changes is **superseded** by a new ADR (the old one is kept and 
 |-----|-------|--------|
 | [0001](0001-repo-structure.md) | Two repositories: application and platform | Accepted |
 | [0002](0002-local-runtime.md) | k3d as the local Kubernetes runtime | Accepted |
-| 0003 | Gateway API implementation for local (Envoy Gateway vs Traefik) | Planned (Phase 3) |
+| [0003](0003-api-stack.md) | Go API stack | Accepted |
+| [0004](0004-database-migrations.md) | Database migrations strategy | Accepted |
+| 0005 | Gateway API implementation for local (Envoy Gateway vs Traefik) | Planned (Phase 3) |
 
 ## Template
 

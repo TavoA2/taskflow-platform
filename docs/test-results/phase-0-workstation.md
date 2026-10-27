@@ -41,6 +41,6 @@ k3d cluster delete sandbox
   instead of relying on this default.
 - `helm-install-traefik` completed after 1 restart: a known startup race while the Traefik CRDs are installed
   by the sibling job; not an error.
-- Traefik and ServiceLB are bundled by k3s; whether to keep or disable them is part of ADR-0003 (Phase 3).
+- Traefik and ServiceLB are bundled by k3s; whether to keep or disable them is part of ADR-0005 (Phase 3).
 - Other clusters present on the workstation (`k3d devops-lab`, `kind clubscope-dev`) were not modified;
   the previous kubectl context was restored after the test.
