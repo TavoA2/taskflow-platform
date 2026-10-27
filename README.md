@@ -31,7 +31,7 @@ Statuses are explicit: **Implemented** (exists in the repo), **Tested** (verifie
 | Phase | Scope | Status |
 |-------|-------|--------|
 | 0 | Repos, conventions, pinned tools, ADR-0001/0002, `make bootstrap` | Implemented, Tested ([evidence](docs/test-results/phase-0-workstation.md)) |
-| 1 | App in containers (compose, migrations, tests) | Planned |
+| 1 | App in containers (compose, migrations, tests) | Implemented, Tested ([evidence](docs/test-results/phase-1-app-in-containers.md)) |
 | 2 | App CI (scan, SBOM, GHCR) | Planned |
 | 3 | Kubernetes on k3d (workloads, Gateway API, probes) | Planned |
 | 4 | GitOps with ArgoCD | Planned |

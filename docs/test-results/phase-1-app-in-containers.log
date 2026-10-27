@@ -1,0 +1,112 @@
+
+===== 0. Environment =====
+date (UTC):        2026-10-27T18:40:11Z
+taskflow-app:      d97bb2a1dd65d1809c5b05bed2d3b7b3fd707116 (feat(frontend): static UI served by nginx with /api reverse proxy)
+image sources (api/, frontend/, compose.yaml) unchanged vs HEAD: yes
+image tag:         d97bb2a1dd65
+go:                go1.27.3
+docker server:     29.6.2
+docker compose:    5.3.1
+kernel:            6.18.33.2-microsoft-standard-WSL2
+
+===== 1. Static checks =====
+gofmt: OK
+go vet (default and integration tags): OK
+
+===== 2. Unit tests (no Docker) =====
+exit=0
+?   	github.com/TavoA2/taskflow-app/api/cmd/taskflow-api	[no test files]
+ok  	github.com/TavoA2/taskflow-app/api/internal/config	0.004s
+ok  	github.com/TavoA2/taskflow-app/api/internal/httpapi	0.132s
+?   	github.com/TavoA2/taskflow-app/api/internal/migrations	[no test files]
+?   	github.com/TavoA2/taskflow-app/api/internal/store	[no test files]
+ok  	github.com/TavoA2/taskflow-app/api/internal/task	0.004s
+tests (incl. subtests): PASS=62 FAIL=0
+
+===== 3. Unit + integration tests (PostgreSQL via testcontainers) =====
+exit=0 (22s)
+ok  	github.com/TavoA2/taskflow-app/api/internal/config	0.040s	coverage: 94.7% of statements
+ok  	github.com/TavoA2/taskflow-app/api/internal/httpapi	0.148s	coverage: 94.4% of statements
+ok  	github.com/TavoA2/taskflow-app/api/internal/migrations	17.794s	coverage: 78.0% of statements
+ok  	github.com/TavoA2/taskflow-app/api/internal/store	13.989s	coverage: 92.5% of statements
+ok  	github.com/TavoA2/taskflow-app/api/internal/task	0.010s	coverage: 100.0% of statements
+tests (incl. subtests): PASS=82 FAIL=0
+
+===== 4. Cold start of the compose stack (empty volume) =====
+up --wait exit=0 (26s incl. image build)
+SERVICE    STATUS                      PORTS
+api        Up 12 seconds (healthy)     127.0.0.1:8081->8080/tcp
+frontend   Up 5 seconds (healthy)      127.0.0.1:8080->8080/tcp
+migrate    Exited (0) 12 seconds ago   
+postgres   Up 18 seconds (healthy)     5432/tcp
+{"msg":"migration applied","migration":1,"file":"00001_create_tasks.sql","duration":"6.829308ms"}
+
+===== 5. Smoke test (scripts/smoke-test.sh) =====
+Smoke test against http://127.0.0.1:8080
+Frontend
+  PASS  GET / returns 200
+  PASS  page is the TaskFlow UI
+  PASS  GET /app.js returns 200
+  PASS  CSP allows only same-origin scripts
+  PASS  X-Content-Type-Options is nosniff
+API through the frontend proxy
+  PASS  list returns 200
+  PASS  list body has an items array
+  PASS  create returns 201
+  PASS  create returns a Location header
+  PASS  created task has default status todo
+  PASS  get returns the created task
+  PASS  patch status to done
+  PASS  invalid input returns 400
+  PASS  unknown task returns 404
+  PASS  X-Request-ID is propagated end to end
+  PASS  delete returns 204
+  PASS  deleted task is gone
+Internal endpoints are not exposed
+  PASS  GET /metrics through the frontend is 404
+  PASS  GET /readyz through the frontend is 404
+  PASS  GET /healthz through the frontend is 404
+
+smoke-test: 20 passed, 0 failed
+exit=0
+
+===== 6. Persistence test (scripts/persistence-test.sh) =====
+12:41:06  created task 01a17eaa-8557-7145-b44b-5bb119506305
+12:41:07  volume: taskflow-evidence_pgdata created 2026-10-27T18:40:46Z
+12:41:07  1/2 restarting the postgres container
+12:41:08  PASS  after postgres restart: task identical (id, title, description, status, timestamps)
+12:41:08  2/2 docker compose down (volume kept) and up
+12:41:16  containers left in project: 0
+12:41:37  PASS  after compose down + up: task identical (id, title, description, status, timestamps)
+12:41:37  volume: taskflow-evidence_pgdata created 2026-10-27T18:40:46Z
+
+persistence-test: PASSED
+exit=0
+
+===== 7. Control: 'down -v' deletes the volume and therefore the data =====
+task 01a17eaa-fca3-7c56-97d7-8d2487a2b92e before: 200
+ Volume taskflow-evidence_pgdata Removing 
+ Volume taskflow-evidence_pgdata Removed 
+task 01a17eaa-fca3-7c56-97d7-8d2487a2b92e after down -v + up: 404  (404 expected: empty database, migrations re-applied)
+
+===== 8. Database outage: readiness vs liveness =====
+postgres stopped: /readyz 503 {"status":"unavailable","checks":{"database":"down"}} | /healthz 200 | UI 200 | /api 500
+postgres started: /readyz 200 after ~2s, /api 200, api restarts: 0
+
+===== 9. Graceful shutdown of the API (SIGTERM, 5s drain) =====
+t+1.5s: /readyz 503 | /healthz 200 | /api via nginx 200
+stop took 5.5s, exit code 0
+
+===== 10. Images =====
+taskflow-api:d97bb2a1dd65  user=nonroot:nonroot  compressed=6334735 bytes  id=sha256:c5786f4d135f
+taskflow-frontend:d97bb2a1dd65  user=101  compressed=25590179 bytes  id=sha256:cf63f0c60777
+postgres: postgres:18.6-alpine3.24
+
+===== 11. Final smoke test after all disruptions =====
+smoke-test: 20 passed, 0 failed
+exit=0
+
+===== 12. Secrets check =====
+database password not present in any container log: OK
+
+evidence project removed (developer volume taskflow_pgdata untouched: taskflow_pgdata)
