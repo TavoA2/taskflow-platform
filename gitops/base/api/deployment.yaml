@@ -1,0 +1,87 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: api
+  labels:
+    app.kubernetes.io/name: api
+    app.kubernetes.io/component: api
+spec:
+  replicas: 2
+  revisionHistoryLimit: 5
+  selector:
+    matchLabels:
+      app.kubernetes.io/name: api
+  strategy:
+    rollingUpdate:
+      # Never drop below the desired replicas during a rollout.
+      maxUnavailable: 0
+      maxSurge: 1
+  template:
+    metadata:
+      labels:
+        app.kubernetes.io/name: api
+        app.kubernetes.io/component: api
+    spec:
+      automountServiceAccountToken: false
+      # Must exceed DRAIN_DELAY (5s) + SHUTDOWN_TIMEOUT (15s): on SIGTERM the API keeps serving while it
+      # reports not-ready, so endpoints stop routing to it, then finishes in-flight requests.
+      terminationGracePeriodSeconds: 30
+      securityContext:
+        runAsNonRoot: true
+        runAsUser: 65532
+        runAsGroup: 65532
+        seccompProfile:
+          type: RuntimeDefault
+      # Prefer replicas on different nodes. All nodes share one host here: this exercises scheduling and
+      # disruption handling, it does not make the application highly available.
+      topologySpreadConstraints:
+        - maxSkew: 1
+          topologyKey: kubernetes.io/hostname
+          whenUnsatisfiable: ScheduleAnyway
+          labelSelector:
+            matchLabels:
+              app.kubernetes.io/name: api
+      containers:
+        - name: api
+          # Placeholder name; each overlay sets the registry, commit-SHA tag and digest.
+          image: taskflow-api
+          args: ["serve"]
+          ports:
+            - name: http
+              containerPort: 8080
+          envFrom:
+            - secretRef:
+                name: postgres-credentials
+          env:
+            # Same connection string as the migrate Job (FQDN: see the comment there).
+            - name: DATABASE_URL
+              value: postgres://$(POSTGRES_USER):$(POSTGRES_PASSWORD)@postgres.taskflow.svc.cluster.local:5432/$(POSTGRES_DB)?sslmode=disable
+            - name: LOG_LEVEL
+              value: info
+          # Liveness never touches the database: a database outage must make pods not-ready, not restart them.
+          livenessProbe:
+            httpGet:
+              path: /healthz
+              port: http
+            periodSeconds: 10
+            timeoutSeconds: 2
+            failureThreshold: 3
+          # Readiness pings the database (1s timeout) and fails while draining after SIGTERM.
+          readinessProbe:
+            httpGet:
+              path: /readyz
+              port: http
+            periodSeconds: 5
+            timeoutSeconds: 2
+            failureThreshold: 2
+          resources:
+            requests:
+              cpu: 50m
+              memory: 64Mi
+            limits:
+              memory: 128Mi
+          securityContext:
+            allowPrivilegeEscalation: false
+            readOnlyRootFilesystem: true
+            capabilities:
+              drop: ["ALL"]

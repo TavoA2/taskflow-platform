@@ -41,6 +41,9 @@ implementation behind them. The local cluster runs k3s v1.36, which bundles Trae
   Kubernetes 1.33-1.36, which constrains the k3s version); Helm installs CRDs on first install only, so CRD
   upgrades need an explicit step; HTTP only in the local environment; the AWS controller's Gateway API support
   must be confirmed when Phase 8 starts.
+- Envoy replaces any `X-Request-ID` sent by clients by default (it treats them as untrusted), which broke
+  end-to-end request correlation (found by the app smoke test in Phase 3). A `ClientTrafficPolicy` on the
+  Gateway sets `requestID: PreserveOrGenerate`. The ID is used for correlation only, never for authorisation.
 
 ## Verification
 

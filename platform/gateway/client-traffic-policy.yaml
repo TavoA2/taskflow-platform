@@ -1,0 +1,15 @@
+# Envoy treats requests from outside as untrusted and, by default, replaces any X-Request-ID they carry.
+# Keep the caller's ID (or generate one when absent) so a request can be followed from the client through
+# the Gateway, nginx and the API logs. The ID is used only for correlation, never for authorisation.
+apiVersion: gateway.envoyproxy.io/v1alpha1
+kind: ClientTrafficPolicy
+metadata:
+  name: public
+  namespace: gateway
+spec:
+  targetRefs:
+    - group: gateway.networking.k8s.io
+      kind: Gateway
+      name: public
+  headers:
+    requestID: PreserveOrGenerate
