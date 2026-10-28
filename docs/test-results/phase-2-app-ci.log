@@ -1,0 +1,82 @@
+
+===== 0. Context =====
+date (UTC): 2026-10-28T04:56:56Z
+taskflow-app main: c8bd679006b85347e7fe1249156d388dea891850 (build(deps): keep nginx on its stable branch in Dependabot (#9))
+tools: gh version 2.103.3 (2026-10-26); Docker version 29.6.2, build dfc4efb
+
+===== 1. Pull requests of Phase 2 (taskflow-app) =====
+#1 MERGED [TavoA2] ci: lint and test workflow with pinned linters -> 39306d0
+#2 MERGED [TavoA2] ci: build images, CVE gate with Trivy, govulncheck and SBOM -> b58a726
+#3 MERGED [TavoA2] ci: publish scanned images to GHCR with provenance and SBOM attestations -> 4652b85
+#4 MERGED [TavoA2] ci: do not cancel sibling publish jobs on failure -> 09c8738
+#5 MERGED [TavoA2] build: Dependabot, digest-pinned base images and main ruleset as code -> ecb6daf
+#6 CLOSED [app/dependabot] build(deps): Bump nginxinc/nginx-unprivileged from 1.30.6-alpine3.24 to 1.31.7-a 
+#7 CLOSED [TavoA2] test: ruleset blocks merge without green checks (will be closed) 
+#8 MERGED [TavoA2] ci: declare ruleset parameters GitHub fills in by default -> ba53ba3
+#9 MERGED [TavoA2] build(deps): keep nginx on its stable branch in Dependabot -> c8bd679
+
+===== 2. CI runs that prove the gates (green -> deliberately red -> green) =====
+run 40569342799 18a03e2 success | lint=success test=success
+run 40571814095 c985dda failure | lint=failure test=success
+    failed step: Lint (golangci-lint, hadolint, shellcheck)
+run 40573243991 4ea2cbe success | test=success lint=success
+run 40575912248 35091f8 success | lint=success test=success build and scan=success
+run 40576997618 6d85f6e failure | lint=success test=success build and scan=failure
+    failed step: Vulnerability report and CVE gate (Trivy)
+run 40584272265 fce29b3 success | test=success lint=success build and scan=success
+
+===== 3. CI runs on main (publication) =====
+run 40634396149 c8bd679 attempt=1 success
+run 40633437425 ba53ba3 attempt=1 success
+run 40621817847 ecb6daf attempt=1 success
+run 40596655997 09c8738 attempt=1 success
+run 40594142868 4652b85 attempt=2 cancelled
+run 40585577457 b58a726 attempt=1 success
+run 40574241599 39306d0 attempt=1 success
+  lint: success
+  test: success
+  build and scan: success
+  publish (frontend): success
+  publish (api): success
+
+===== 4. Published images for main (c8bd679006b85347e7fe1249156d388dea891850) =====
+ghcr.io/tavoa2/taskflow-api:c8bd679006b85347e7fe1249156d388dea891850
+  anonymous pull manifest digest: sha256:f46bab3aae90294f81bda0f2bf79e21eb105983e02b00e62ef97eff16ef8f172
+  tags: ["4652b85474f0707ae92a7822f1213eb5aab7c25a","09c87381edab4449b738231e837b8c22ec4e1150","ecb6daf46b983c18c5d0dc4b26caab255de2cfc8","ba53ba382b3fdad3170bf375e0df74185e739ace","c8bd679006b85347e7fe1249156d388dea891850"]
+  'latest' present: false
+  provenance VERIFIED: https://slsa.dev/provenance/v1 subject=f46bab3aae90294f repo=https://github.com/TavoA2/taskflow-app ref=refs/heads/main commit=c8bd679006b8 workflow=TavoA2/taskflow-app/.github/workflows/ci.yml@refs/heads/main trigger=push
+  SBOM VERIFIED: https://cyclonedx.org/bom components=29 subject=f46bab3aae90294f
+  negative (other commit): rejected as expected
+ghcr.io/tavoa2/taskflow-frontend:c8bd679006b85347e7fe1249156d388dea891850
+  anonymous pull manifest digest: sha256:b422aa5508db38de3fda6561cf358d53595e248483e83d07132b96761cea3972
+  tags: ["4652b85474f0707ae92a7822f1213eb5aab7c25a","09c87381edab4449b738231e837b8c22ec4e1150","ecb6daf46b983c18c5d0dc4b26caab255de2cfc8","ba53ba382b3fdad3170bf375e0df74185e739ace","c8bd679006b85347e7fe1249156d388dea891850"]
+  'latest' present: false
+  provenance VERIFIED: https://slsa.dev/provenance/v1 subject=b422aa5508db38de repo=https://github.com/TavoA2/taskflow-app ref=refs/heads/main commit=c8bd679006b8 workflow=TavoA2/taskflow-app/.github/workflows/ci.yml@refs/heads/main trigger=push
+  SBOM VERIFIED: https://cyclonedx.org/bom components=71 subject=b422aa5508db38de
+  negative (other commit): rejected as expected
+
+===== 5. Branch protection (rulesets) and drift check =====
+TavoA2/taskflow-app: ruleset protect-main id=26006962 enforcement=active
+  effective rules on main: deletion, non_fast_forward, pull_request, required_linear_history, required_status_checks
+  ruleset 'protect-main' on TavoA2/taskflow-app matches .github/rulesets/main.json
+TavoA2/taskflow-platform: ruleset protect-main id=26007045 enforcement=active
+  effective rules on main: deletion, non_fast_forward, pull_request, required_linear_history
+  ruleset 'protect-main' on TavoA2/taskflow-platform matches .github/rulesets/main.json
+
+===== 6. Repository settings =====
+TavoA2/taskflow-app: visibility=public merge=false squash=true rebase=false delete-branch-on-merge=true secret-scanning=enabled push-protection=enabled dependabot-security-updates=enabled
+  default GITHUB_TOKEN permissions=read can-approve-PRs=false
+TavoA2/taskflow-platform: visibility=public merge=false squash=true rebase=false delete-branch-on-merge=true secret-scanning=enabled push-protection=enabled dependabot-security-updates=enabled
+  default GITHUB_TOKEN permissions=read can-approve-PRs=false
+
+===== 7. Workflow pinning (taskflow-app main) =====
+      2 uses: actions/attest@1e69f48acb82d1966a394da916b4c1698aa569d6
+      1 uses: actions/cache@55cc8345863c7cc4c66a329aec7e433d2d1c52a9
+      3 uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1
+      2 uses: actions/download-artifact@9000827ccba6bdab643e8b6fd33ac0654aef8333
+      3 uses: actions/setup-go@b7ad1dad31e06c5925ef5d2fc7ad053ef454303e
+      2 uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9
+unpinned (tag-only) actions: 0
+FROM golang:1.27.3-alpine3.24@sha256:d200d2dd76b0... AS build
+FROM gcr.io/distroless/static-debian13:nonroot@sha256:18f4cc26c9ff...
+FROM nginxinc/nginx-unprivileged:1.30.6-alpine3.24@sha256:f5116ed4606f...
