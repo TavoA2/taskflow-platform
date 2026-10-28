@@ -12,6 +12,7 @@ Numbers are assigned when an ADR is written, not reserved in advance for planned
 | [0004](0004-database-migrations.md) | Database migrations strategy | Accepted |
 | [0005](0005-app-ci-and-supply-chain.md) | Application CI and software supply chain | Accepted |
 | [0006](0006-gateway-api-implementation.md) | Gateway API with Envoy Gateway for the local cluster | Accepted |
+| [0007](0007-database-on-kubernetes.md) | PostgreSQL, credentials and migrations on the local cluster | Accepted |
 
 ## Template
 

@@ -20,7 +20,7 @@ export KUBECONFORM_IMAGE KUBE_VERSION KUBECTX
 ENVOY_GATEWAY_CHART   := oci://docker.io/envoyproxy/gateway-helm
 ENVOY_GATEWAY_VERSION := v1.9.3
 
-.PHONY: help bootstrap secrets-scan validate ruleset ruleset-check cluster-up cluster-down cluster-status platform-install gateway-smoke
+.PHONY: help bootstrap secrets-scan validate ruleset ruleset-check cluster-up cluster-down cluster-status platform-install gateway-smoke local-secrets deploy
 
 help: ## List available targets
 	@grep -E '^[a-zA-Z_-]+:.*## ' $(MAKEFILE_LIST) | awk 'BEGIN {FS = ":.*## "}; {printf "  \033[36m%-15s\033[0m %s\n", $$1, $$2}'
@@ -65,3 +65,9 @@ platform-install: ## Install Envoy Gateway (pinned chart) and the shared Gateway
 
 gateway-smoke: ## Route a throwaway backend through the Gateway on 127.0.0.1:8088, then remove it
 	./scripts/gateway-smoke.sh
+
+local-secrets: ## Create the git-ignored local database credentials (random password) if missing
+	./scripts/local-secrets.sh
+
+deploy: ## Apply gitops/overlays/local to the local cluster and run database migrations
+	./scripts/deploy.sh

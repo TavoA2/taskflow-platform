@@ -1,0 +1,16 @@
+# Headless Service: gives the StatefulSet pod a stable DNS name (postgres.taskflow.svc.cluster.local
+# resolves to postgres-0). Only ready pods are published, so clients cannot reach a database still initialising.
+apiVersion: v1
+kind: Service
+metadata:
+  name: postgres
+  labels:
+    app.kubernetes.io/name: postgres
+spec:
+  clusterIP: None
+  selector:
+    app.kubernetes.io/name: postgres
+  ports:
+    - name: postgres
+      port: 5432
+      targetPort: postgres
