@@ -11,8 +11,7 @@ Numbers are assigned when an ADR is written, not reserved in advance for planned
 | [0003](0003-api-stack.md) | Go API stack | Accepted |
 | [0004](0004-database-migrations.md) | Database migrations strategy | Accepted |
 | [0005](0005-app-ci-and-supply-chain.md) | Application CI and software supply chain | Accepted |
-
-Planned (not yet numbered): Gateway API implementation for local (Envoy Gateway vs Traefik), Phase 3.
+| [0006](0006-gateway-api-implementation.md) | Gateway API with Envoy Gateway for the local cluster | Accepted |
 
 ## Template
 

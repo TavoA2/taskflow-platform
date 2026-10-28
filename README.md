@@ -50,6 +50,7 @@ Statuses are explicit: **Implemented** (exists in the repo), **Tested** (verifie
 | `.tool-versions` | Pinned tool versions (asdf/mise format) | Implemented |
 | `k3d/taskflow-local.yaml` | Local cluster as code (`make cluster-up`) | Implemented (Phase 3) |
 | `.github/workflows/ci.yml` | `validate` (required check) and secrets scan | Implemented (Phase 3) |
+| `platform/` | Cluster add-ons: Envoy Gateway values, shared Gateway, Gateway smoke test (ADR-0006) | Implemented (Phase 3) |
 | `gitops/` | Manifests, ArgoCD Applications, overlays `local` / `ec2` / `aws` | Planned (Phase 3-4) |
 | `terraform/` | Modules and `envs/` | Planned (Phase 8) |
 | `docs/test-results/` | Test evidence per phase | Implemented (Phases 0-2) |
@@ -79,6 +80,8 @@ make ruleset-check  # fail if the live branch protection differs from .github/ru
 make cluster-up     # create/start the local k3d cluster (k3d/taskflow-local.yaml)
 make cluster-status # nodes and system pods
 make cluster-down   # delete the cluster and its volumes
+make platform-install  # Envoy Gateway (pinned chart, Gateway API CRDs v1.6.1) + shared Gateway
+make gateway-smoke     # route a throwaway backend through http://127.0.0.1:8088, then remove it
 ```
 
 Local cluster: k3s v1.36.5, 1 server + 2 agents, Traefik disabled (Envoy Gateway replaces it). The Kubernetes

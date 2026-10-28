@@ -1,0 +1,21 @@
+# Public entry point. Envoy Gateway creates an Envoy proxy Deployment and a LoadBalancer Service for it;
+# locally k3s ServiceLB exposes that Service on port 80 of the nodes, which k3d maps to 127.0.0.1:8088.
+# HTTP only in the local environment; TLS terminates at the AWS load balancer in the aws overlay (Phase 8).
+apiVersion: gateway.networking.k8s.io/v1
+kind: Gateway
+metadata:
+  name: public
+  namespace: gateway
+spec:
+  gatewayClassName: envoy
+  listeners:
+    - name: http
+      protocol: HTTP
+      port: 80
+      allowedRoutes:
+        # Only namespaces explicitly opted in can attach routes: any other namespace cannot publish itself.
+        namespaces:
+          from: Selector
+          selector:
+            matchLabels:
+              gateway-access: "true"

@@ -1,0 +1,7 @@
+# Throwaway backend used by `make gateway-smoke` to prove the Gateway routes traffic end to end.
+# Applied, tested and deleted by the target; never left running.
+apiVersion: kustomize.config.k8s.io/v1beta1
+kind: Kustomization
+namespace: gateway-smoke
+resources:
+  - resources.yaml
