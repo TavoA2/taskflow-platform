@@ -1,0 +1,23 @@
+apiVersion: kustomize.config.k8s.io/v1beta1
+kind: Kustomization
+
+# Local k3d cluster (`make deploy`).
+namespace: taskflow
+
+resources:
+  - ../../base
+
+# TEMPORARY until Phase 5 (encrypted secrets). Credentials come from a git-ignored file created by
+# `make local-secrets`; only secrets/postgres.env.example is committed. The generated Secret name carries
+# a content hash, so pods that use it are rolled when the credentials change.
+secretGenerator:
+  - name: postgres-credentials
+    envs:
+      - secrets/postgres.env
+
+# Images published by taskflow-app CI: commit-SHA tag for humans, digest for what actually runs.
+images:
+  - name: taskflow-api
+    newName: ghcr.io/tavoa2/taskflow-api
+    newTag: 488ce875a723eab96b47b2634e37be8b461c7f18
+    digest: sha256:618ccec89ee42d0090f1566dbf9f8d44475b317ab8967d40274f0ce9369e598e

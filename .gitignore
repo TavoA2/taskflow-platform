@@ -22,6 +22,8 @@ kubeconfig
 .env
 .env.*
 !.env.example
+# Kustomize secretGenerator inputs (only *.env.example placeholders are committed)
+gitops/overlays/*/secrets/*.env
 # Decrypted SOPS files (encrypted *.enc.yaml are committed)
 *.dec.yaml
 *.decrypted.*

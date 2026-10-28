@@ -1,0 +1,13 @@
+apiVersion: v1
+kind: Namespace
+metadata:
+  name: taskflow
+  labels:
+    # Opt in to the shared Gateway (platform/gateway): HTTPRoutes from this namespace may attach to it.
+    gateway-access: "true"
+    # Pod Security Admission: the API server rejects any pod in this namespace that does not meet the
+    # "restricted" profile (non-root, no privilege escalation, all capabilities dropped, seccomp set).
+    pod-security.kubernetes.io/enforce: restricted
+    pod-security.kubernetes.io/enforce-version: v1.36
+    pod-security.kubernetes.io/warn: restricted
+    pod-security.kubernetes.io/warn-version: v1.36

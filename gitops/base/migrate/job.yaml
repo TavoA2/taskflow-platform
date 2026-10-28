@@ -1,0 +1,58 @@
+# Applies schema migrations once per deploy, with the same image as the API (ADR-0004, ADR-0007).
+# A Job's pod template is immutable: `make deploy` deletes the previous run before applying.
+apiVersion: batch/v1
+kind: Job
+metadata:
+  name: migrate
+  labels:
+    app.kubernetes.io/name: migrate
+    app.kubernetes.io/component: migrations
+spec:
+  # Retries cover the database not being ready yet (the headless Service publishes it only once ready).
+  backoffLimit: 6
+  activeDeadlineSeconds: 300
+  # Keep the finished Job and its logs for a day as evidence, then let Kubernetes clean it up.
+  ttlSecondsAfterFinished: 86400
+  template:
+    metadata:
+      labels:
+        app.kubernetes.io/name: migrate
+        app.kubernetes.io/component: migrations
+    spec:
+      restartPolicy: Never
+      automountServiceAccountToken: false
+      securityContext:
+        # Numeric "nonroot" user of the distroless image.
+        runAsNonRoot: true
+        runAsUser: 65532
+        runAsGroup: 65532
+        seccompProfile:
+          type: RuntimeDefault
+      containers:
+        - name: migrate
+          # Placeholder name; each overlay sets the registry, commit-SHA tag and digest.
+          image: taskflow-api
+          args: ["migrate", "up"]
+          envFrom:
+            - secretRef:
+                name: postgres-credentials
+          env:
+            # $(VAR) expands variables already defined for the container (here, from the Secret).
+            # FQDN on purpose: CoreDNS answers cluster.local names itself, so while the database is not ready
+            # the lookup fails fast with "no such host". A short name ("postgres") would end up forwarded
+            # upstream as "postgres.", which Docker Desktop's resolver drops, turning each retry into a timeout.
+            - name: DATABASE_URL
+              value: postgres://$(POSTGRES_USER):$(POSTGRES_PASSWORD)@postgres.taskflow.svc.cluster.local:5432/$(POSTGRES_DB)?sslmode=disable
+            - name: LOG_LEVEL
+              value: info
+          resources:
+            requests:
+              cpu: 50m
+              memory: 32Mi
+            limits:
+              memory: 64Mi
+          securityContext:
+            allowPrivilegeEscalation: false
+            readOnlyRootFilesystem: true
+            capabilities:
+              drop: ["ALL"]
