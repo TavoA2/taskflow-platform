@@ -22,6 +22,7 @@ installed_version() {
     golang)  go env GOVERSION | sed 's/^go//' ;;
     kubectl) kubectl version --client | sed -n 's/^Client Version: v//p' ;;
     k3d)     k3d version | sed -n 's/^k3d version v//p' ;;
+    helm)    helm version --short | sed -E "s/^v//; s/\+.*//" ;;
     *)       return 1 ;;
   esac
 } 2>/dev/null </dev/null

@@ -48,6 +48,8 @@ Statuses are explicit: **Implemented** (exists in the repo), **Tested** (verifie
 | `docs/adr/` | Architecture Decision Records | Implemented |
 | `scripts/bootstrap.sh` | Read-only workstation check used by `make bootstrap` | Implemented |
 | `.tool-versions` | Pinned tool versions (asdf/mise format) | Implemented |
+| `k3d/taskflow-local.yaml` | Local cluster as code (`make cluster-up`) | Implemented (Phase 3) |
+| `.github/workflows/ci.yml` | `validate` (required check) and secrets scan | Implemented (Phase 3) |
 | `gitops/` | Manifests, ArgoCD Applications, overlays `local` / `ec2` / `aws` | Planned (Phase 3-4) |
 | `terraform/` | Modules and `envs/` | Planned (Phase 8) |
 | `docs/test-results/` | Test evidence per phase | Implemented (Phases 0-2) |
@@ -69,11 +71,19 @@ Work inside the WSL filesystem (`~/code/...`), not under `/mnt/c`.
 ## Usage
 
 ```bash
-make help          # list targets
-make bootstrap     # verify the workstation; exit code 0 = READY
-make secrets-scan  # gitleaks over the full git history
-make ruleset-check # fail if the live branch protection differs from .github/rulesets/main.json
+make help           # list targets
+make bootstrap      # verify the workstation; exit code 0 = READY
+make validate       # actionlint + kustomize build | kubeconform (Kubernetes 1.36 schema, strict)
+make secrets-scan   # gitleaks over the full git history
+make ruleset-check  # fail if the live branch protection differs from .github/rulesets/main.json
+make cluster-up     # create/start the local k3d cluster (k3d/taskflow-local.yaml)
+make cluster-status # nodes and system pods
+make cluster-down   # delete the cluster and its volumes
 ```
+
+Local cluster: k3s v1.36.5, 1 server + 2 agents, Traefik disabled (Envoy Gateway replaces it). The Kubernetes
+API listens on `127.0.0.1:6445` and the Gateway on `127.0.0.1:8088`. Make targets always pass
+`--context k3d-taskflow`; your current kubectl context is never changed or used.
 
 Changes to `main` go through pull requests only (squash merge, no force push, no bypass).
 

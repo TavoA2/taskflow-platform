@@ -1,0 +1,32 @@
+# Platform CI: validates workflows and Kubernetes manifests, and scans the full history for secrets,
+# on every pull request and push to main. Each step is a Makefile target that runs the same locally.
+name: ci
+
+on:
+  pull_request:
+  push:
+    branches: [main]
+
+permissions:
+  contents: read
+
+concurrency:
+  group: ci-${{ github.ref }}
+  cancel-in-progress: ${{ github.event_name == 'pull_request' }}
+
+jobs:
+  validate:
+    name: validate
+    runs-on: ubuntu-26.04
+    timeout-minutes: 10
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          fetch-depth: 0             # the secrets scan reads the whole history
+          persist-credentials: false
+      - name: Lint workflows and validate manifests (actionlint, kustomize, kubeconform)
+        run: make validate
+      # Runs even if validation failed: a manifest error must not hide a leaked secret.
+      - name: Secrets scan (full git history)
+        if: ${{ !cancelled() }}
+        run: make secrets-scan

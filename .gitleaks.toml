@@ -1,0 +1,13 @@
+# gitleaks configuration: all default rules, plus narrowly scoped allowlists for known false positives.
+# Every entry must say what it matches and why it is not a secret.
+[extend]
+useDefault = true
+
+[[allowlists]]
+description = """
+Container image references tagged with a full git commit SHA, e.g. taskflow-api:<40 hex>, in test evidence.
+The generic-api-key rule reads "api:" followed by 40 high-entropy hex characters as a key; a commit SHA is
+public. Anchored to our two image names and exactly 40 lowercase hex characters.
+"""
+regexTarget = "match"
+regexes = ['''^taskflow-(api|frontend):[0-9a-f]{40}$''']

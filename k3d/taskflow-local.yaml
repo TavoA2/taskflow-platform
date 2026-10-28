@@ -1,0 +1,27 @@
+# Local Kubernetes cluster for TaskFlow (ADR-0002). Created with `make cluster-up`, removed with `make cluster-down`.
+# Every setting lives here, so the cluster can be recreated identically; no ad-hoc CLI flags.
+apiVersion: k3d.io/v1alpha5
+kind: Simple
+metadata:
+  name: taskflow
+servers: 1
+agents: 2 # spread replicas across nodes; PodDisruptionBudget and node-drain tests need more than one node
+# k3s pinned by tag and digest. 1.36: same minor as kubectl, and within Envoy Gateway 1.9's supported range (1.33-1.36).
+image: rancher/k3s:v1.36.5-k3s1@sha256:057cfd5a9d51b89f1f0ee139c28d5d5fdd5aa7ddeac2742a0ba90c6dbc0329bb
+kubeAPI:
+  hostIP: 127.0.0.1 # Kubernetes API reachable only from this machine
+  hostPort: "6445"
+ports:
+  # Host 127.0.0.1:8088 -> k3d load balancer -> port 80 on the nodes, where the Gateway's Service is exposed
+  # by k3s ServiceLB. 8088 avoids the compose stack's 8080.
+  - port: 127.0.0.1:8088:80
+    nodeFilters: [loadbalancer]
+options:
+  k3s:
+    extraArgs:
+      # Traefik is replaced by Envoy Gateway (Gateway API, ADR-0006). ServiceLB stays: it exposes the Gateway.
+      - arg: --disable=traefik
+        nodeFilters: ["server:*"]
+  kubeconfig:
+    updateDefaultKubeconfig: true
+    switchCurrentContext: false # never change the user's current kubectl context; targets use --context k3d-taskflow
