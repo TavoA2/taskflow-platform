@@ -13,3 +13,5 @@ resources:
   - namespace.yaml
   - postgres
   - migrate
+  - api
+  - frontend

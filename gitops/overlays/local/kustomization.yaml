@@ -21,3 +21,7 @@ images:
     newName: ghcr.io/tavoa2/taskflow-api
     newTag: 488ce875a723eab96b47b2634e37be8b461c7f18
     digest: sha256:618ccec89ee42d0090f1566dbf9f8d44475b317ab8967d40274f0ce9369e598e
+  - name: taskflow-frontend
+    newName: ghcr.io/tavoa2/taskflow-frontend
+    newTag: 488ce875a723eab96b47b2634e37be8b461c7f18
+    digest: sha256:a4f5893154f60385efb943ad3f30c6fe4c5e1853c8415c99b5d06abd3aa9c9c6
