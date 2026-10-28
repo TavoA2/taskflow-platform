@@ -1,0 +1,8 @@
+# Shared entry point owned by the platform: one GatewayClass and one Gateway.
+# Applications attach HTTPRoutes to it from namespaces labelled gateway-access: "true".
+apiVersion: kustomize.config.k8s.io/v1beta1
+kind: Kustomization
+resources:
+  - namespace.yaml
+  - gatewayclass.yaml
+  - gateway.yaml

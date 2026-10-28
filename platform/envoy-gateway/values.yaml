@@ -1,0 +1,6 @@
+# Envoy Gateway Helm values (chart oci://docker.io/envoyproxy/gateway-helm, version pinned in the Makefile).
+# Defaults reviewed for v1.9.3 and kept: the controller runs as UID 65532, non-root, read-only root filesystem,
+# all capabilities dropped, no privilege escalation; requests 100m CPU / 256Mi, limit 1Gi.
+# The chart also installs the Gateway API CRDs it was tested with (v1.6.1) and Envoy Gateway's own CRDs.
+crds:
+  enabled: true

@@ -1,0 +1,8 @@
+# The implementation behind Gateways of this class. Environment-specific: in AWS an overlay points the
+# Gateway at the AWS Load Balancer Controller's class instead; Gateway and HTTPRoutes stay the same (ADR-0006).
+apiVersion: gateway.networking.k8s.io/v1
+kind: GatewayClass
+metadata:
+  name: envoy
+spec:
+  controllerName: gateway.envoyproxy.io/gatewayclass-controller
