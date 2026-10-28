@@ -1,0 +1,6 @@
+# Cluster DNS hardening. k3s installs CoreDNS itself (one replica); `make platform-install` scales it to two
+# and this adds a disruption budget. The k3s manifest sets no replica count, so the scale is not reverted.
+apiVersion: kustomize.config.k8s.io/v1beta1
+kind: Kustomization
+resources:
+  - pdb.yaml

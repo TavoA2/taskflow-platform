@@ -44,6 +44,10 @@ implementation behind them. The local cluster runs k3s v1.36, which bundles Trae
 - Envoy replaces any `X-Request-ID` sent by clients by default (it treats them as untrusted), which broke
   end-to-end request correlation (found by the app smoke test in Phase 3). A `ClientTrafficPolicy` on the
   Gateway sets `requestID: PreserveOrGenerate`. The ID is used for correlation only, never for authorisation.
+- The chart and the default proxy run one replica each. Phase 3 drain tests showed both are single points of
+  failure (a draining proxy without a control plane kept routing to removed backends: 503s for ~17 s). The
+  controller now runs 2 replicas with leader election, and an `EnvoyProxy` referenced by the GatewayClass runs
+  2 proxies spread across nodes, both with PDBs (evidence: `docs/test-results/phase-3-kubernetes.md`).
 
 ## Verification
 

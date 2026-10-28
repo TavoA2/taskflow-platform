@@ -26,6 +26,12 @@ jobs:
           persist-credentials: false
       - name: Lint workflows and validate manifests (actionlint, kustomize, kubeconform)
         run: make validate
+      # A pull request that points an overlay at an unpinned or unattested image fails here, before merge.
+      - name: Verify image pins and provenance attestations
+        if: ${{ !cancelled() }}
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: make verify-images
       # Runs even if validation failed: a manifest error must not hide a leaked secret.
       - name: Secrets scan (full git history)
         if: ${{ !cancelled() }}

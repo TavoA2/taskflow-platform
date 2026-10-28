@@ -1,0 +1,12 @@
+# Every name lookup in the cluster depends on CoreDNS (nginx resolves the API per request). With one replica,
+# draining its node stopped name resolution and the application with it (Phase 3 drain test).
+apiVersion: policy/v1
+kind: PodDisruptionBudget
+metadata:
+  name: coredns
+  namespace: kube-system
+spec:
+  minAvailable: 1
+  selector:
+    matchLabels:
+      k8s-app: kube-dns

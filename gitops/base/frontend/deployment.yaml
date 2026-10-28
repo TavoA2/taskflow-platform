@@ -63,6 +63,12 @@ spec:
             periodSeconds: 10
             timeoutSeconds: 2
             failureThreshold: 3
+          # On deletion, keep serving for 5s before nginx gets SIGQUIT: the Gateway learns that this endpoint is
+          # gone only after the EndpointSlice update reaches Envoy. Without it the rollout test saw 503s.
+          lifecycle:
+            preStop:
+              sleep:
+                seconds: 5
           resources:
             requests:
               cpu: 25m

@@ -33,7 +33,7 @@ Statuses are explicit: **Implemented** (exists in the repo), **Tested** (verifie
 | 0 | Repos, conventions, pinned tools, ADR-0001/0002, `make bootstrap` | Implemented, Tested ([evidence](docs/test-results/phase-0-workstation.md)) |
 | 1 | App in containers (compose, migrations, tests) | Implemented, Tested ([evidence](docs/test-results/phase-1-app-in-containers.md)) |
 | 2 | App CI (scan, SBOM, GHCR) | Implemented, Tested ([evidence](docs/test-results/phase-2-app-ci.md), [ADR-0005](docs/adr/0005-app-ci-and-supply-chain.md)) |
-| 3 | Kubernetes on k3d (workloads, Gateway API, probes) | Planned |
+| 3 | Kubernetes on k3d (workloads, Gateway API, probes, image verification, disruption tests) | Implemented, Tested ([evidence](docs/test-results/phase-3-kubernetes.md), [ADR-0006](docs/adr/0006-gateway-api-implementation.md), [ADR-0007](docs/adr/0007-database-on-kubernetes.md)) |
 | 4 | GitOps with ArgoCD | Planned |
 | 5 | Security baseline (RBAC, NetworkPolicies, secrets) | Planned |
 | 6 | Observability (Prometheus, Grafana, alerts) | Planned |
@@ -50,12 +50,13 @@ Statuses are explicit: **Implemented** (exists in the repo), **Tested** (verifie
 | `.tool-versions` | Pinned tool versions (asdf/mise format) | Implemented |
 | `k3d/taskflow-local.yaml` | Local cluster as code (`make cluster-up`) | Implemented (Phase 3) |
 | `.github/workflows/ci.yml` | `validate` (required check) and secrets scan | Implemented (Phase 3) |
-| `platform/` | Cluster add-ons: Envoy Gateway values, shared Gateway, Gateway smoke test (ADR-0006) | Implemented (Phase 3) |
-| `gitops/base/` | Application manifests: namespace (Pod Security `restricted`), PostgreSQL, migrate Job (ADR-0007), API and frontend Deployments with PDBs, HTTPRoute | Implemented (Phase 3, in progress) |
-| `gitops/overlays/local/` | Local overlay: pinned images, git-ignored credentials (`make local-secrets`) | Implemented (Phase 3, in progress) |
+| `platform/` | Cluster add-ons: Envoy Gateway (2 controllers, 2 proxies, PDBs), shared Gateway, CoreDNS PDB, Gateway smoke test (ADR-0006) | Implemented, Tested |
+| `gitops/base/` | Application manifests: namespace (Pod Security `restricted`), PostgreSQL, migrate Job (ADR-0007), API and frontend Deployments with PDBs, HTTPRoute | Implemented, Tested |
+| `gitops/overlays/local/` | Local overlay: digest-pinned, attested images (`make bump-images`), git-ignored credentials (`make local-secrets`) | Implemented, Tested |
+| `tests/k6/`, `scripts/disruption-test.sh` | Steady load during rollouts and node drains (`make disruption-test`) | Implemented, Tested |
 | `gitops/` (ArgoCD, `ec2` / `aws` overlays) | ArgoCD Applications and further overlays | Planned (Phases 4, 8-9) |
 | `terraform/` | Modules and `envs/` | Planned (Phase 8) |
-| `docs/test-results/` | Test evidence per phase | Implemented (Phases 0-2) |
+| `docs/test-results/` | Test evidence per phase | Implemented (Phases 0-3) |
 | `.github/rulesets/main.json` | Branch protection of `main` as code (`make ruleset`, `make ruleset-check`) | Implemented |
 | `docs/runbooks/` | Operational runbooks | Planned (Phase 7) |
 
@@ -85,7 +86,10 @@ make cluster-down   # delete the cluster and its volumes
 make platform-install  # Envoy Gateway (pinned chart, Gateway API CRDs v1.6.1) + shared Gateway
 make gateway-smoke     # route a throwaway backend through http://127.0.0.1:8088, then remove it
 make local-secrets     # create the git-ignored database credentials (once)
-make deploy            # data tier + migrations, then API, frontend and route; app at http://127.0.0.1:8088
+make deploy            # verify images, data tier + migrations, then API, frontend, route; http://127.0.0.1:8088
+make verify-images     # fail unless images are digest-pinned and TaskFlow images have CI provenance
+make bump-images SHA=<taskflow-app commit>   # point the local overlay at that commit's images
+make disruption-test CASE="baseline|rollout-api|rollout-frontend|drain <node>"   # k6 load during a disruption
 ```
 
 Local cluster: k3s v1.36.5, 1 server + 2 agents, Traefik disabled (Envoy Gateway replaces it). The Kubernetes
