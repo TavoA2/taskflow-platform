@@ -17,6 +17,9 @@ if [[ ! -f $overlay/secrets/postgres.env ]]; then
   exit 1
 fi
 
+# Fail closed: nothing is applied unless every image is pinned and TaskFlow images carry CI provenance.
+./scripts/verify-images.sh "$overlay"
+
 # A Job's pod template is immutable, so a new image could not be applied over the previous run.
 # Migrations are idempotent: re-running them on an up-to-date schema changes nothing.
 k -n taskflow delete job migrate --ignore-not-found --wait=true

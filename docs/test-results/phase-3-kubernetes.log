@@ -1,0 +1,436 @@
+# Phase 3 raw evidence, 2026-10-28 (see phase-3-kubernetes.md). Secrets are never printed by these commands.
+
+================================================================ recreate.log
+git: 61634b8 feat/phase3-verify (uncommitted Phase 3 changes included)
+### cluster-down
+    OK 28s
+    leftovers: containers=0 volumes=0
+### cluster-up
+    OK 59s
+### platform-install
+    OK 183s
+### local-secrets
+    OK 0s
+### deploy
+    OK 154s
+TOTAL from empty to deployed: 426s
+smoke-test: 20 passed, 0 failed
+    deploy: migrate attempts: 2
+    {"time":"2026-10-28T07:42:21.47505436Z","level":"INFO","msg":"migration applied","service":"taskflow-api","version":"488ce875a723","component":"migrate","migration":1,"file":"00001_create_tasks.sql","direction":"up","duration":"16.019159ms"}
+    {"time":"2026-10-28T07:42:21.475660945Z","level":"INFO","msg":"schema version","service":"taskflow-api","version":"488ce875a723","component":"migrate","schema_version":1}
+      4 envoy-gateway-system
+      7 kube-system
+      7 taskflow
+envoy-gateway-system/envoy-gateway minAvailable=1 allowed=1
+envoy-gateway-system/envoy-gateway-public-1e7f3513 minAvailable=1 allowed=1
+kube-system/coredns minAvailable=1 allowed=1
+taskflow/api minAvailable=1 allowed=1
+taskflow/frontend minAvailable=1 allowed=1
+context unchanged: yes (kind-clubscope-dev)
+
+================================================================ recreate-platform-install.log
+helm upgrade --install eg oci://docker.io/envoyproxy/gateway-helm --version v1.9.3 \
+  --kube-context k3d-taskflow --namespace envoy-gateway-system --create-namespace \
+  -f platform/envoy-gateway/values.yaml --wait --timeout 5m
+Release "eg" does not exist. Installing it now.
+Pulled: docker.io/envoyproxy/gateway-helm:v1.9.3
+Digest: sha256:be1b8f163a338f94e7d6532336c08d6856fc70a0b790ac14a2826a54d23e0dd3
+NAME: eg
+LAST DEPLOYED: Wed Oct 28 01:37:40 2026
+NAMESPACE: envoy-gateway-system
+STATUS: deployed
+REVISION: 1
+TEST SUITE: None
+NOTES:
+**************************************************************************
+*** PLEASE BE PATIENT: Envoy Gateway may take a few minutes to install ***
+**************************************************************************
+Envoy Gateway is an open source project for managing Envoy Proxy as a standalone or Kubernetes-based application gateway.
+Thank you for installing Envoy Gateway! 🎉
+Your release is named: eg. 🎉
+Your release is in namespace: envoy-gateway-system. 🎉
+To learn more about the release, try:
+  $ helm status eg -n envoy-gateway-system
+  $ helm get all eg -n envoy-gateway-system
+To have a quickstart of Envoy Gateway, please refer to https://gateway.envoyproxy.io/latest/tasks/quickstart.
+To get more details, please visit https://gateway.envoyproxy.io and https://github.com/envoyproxy/gateway.
+kubectl --context k3d-taskflow apply -k platform/gateway
+namespace/gateway created
+clienttrafficpolicy.gateway.envoyproxy.io/public created
+envoyproxy.gateway.envoyproxy.io/envoy created
+gateway.gateway.networking.k8s.io/public created
+gatewayclass.gateway.networking.k8s.io/envoy created
+kubectl --context k3d-taskflow -n gateway wait gateway/public --for=condition=Programmed --timeout=180s
+gateway.gateway.networking.k8s.io/public condition met
+kubectl --context k3d-taskflow -n envoy-gateway-system rollout status deployment -l gateway.envoyproxy.io/owning-gateway-name=public --timeout=180s
+deployment "envoy-gateway-public-1e7f3513" successfully rolled out
+kubectl --context k3d-taskflow -n gateway get gateway public
+NAME     CLASS   ADDRESS      PROGRAMMED   AGE
+public   envoy   172.20.0.4   True         44s
+kubectl --context k3d-taskflow -n kube-system scale deployment/coredns --replicas=2
+deployment.apps/coredns scaled
+kubectl --context k3d-taskflow apply -k platform/coredns
+poddisruptionbudget.policy/coredns created
+kubectl --context k3d-taskflow -n kube-system rollout status deployment/coredns --timeout=120s
+Waiting for deployment "coredns" rollout to finish: 1 of 2 updated replicas are available...
+deployment "coredns" successfully rolled out
+
+================================================================ recreate-deploy.log
+./scripts/deploy.sh
+OK    ghcr.io/tavoa2/taskflow-api:488ce875a723eab96b47b2634e37be8b461c7f18@sha256:618ccec89ee42d0090f1566dbf9f8d44475b317ab8967d40274f0ce9369e598e  (SLSA provenance from TavoA2/taskflow-app/.github/workflows/ci.yml on refs/heads/main)
+OK    ghcr.io/tavoa2/taskflow-frontend:488ce875a723eab96b47b2634e37be8b461c7f18@sha256:a4f5893154f60385efb943ad3f30c6fe4c5e1853c8415c99b5d06abd3aa9c9c6  (SLSA provenance from TavoA2/taskflow-app/.github/workflows/ci.yml on refs/heads/main)
+OK    postgres:18.6-alpine3.24@sha256:10a5c69a83035ab5239f5620d708520e8b28f5aa1f2b20143e6024532edadfb5  (third-party, pinned by digest, not attested)
+deploy: phase 1/2 - data tier and migrations
+namespace/taskflow created
+secret/postgres-credentials-8cmcd9f765 created
+service/postgres created
+statefulset.apps/postgres created
+job.batch/migrate created
+Waiting for 1 pods to be ready...
+partitioned roll out complete: 1 new pods have been updated...
+job.batch/migrate condition met
+deploy: migrate attempts: 2
+{"time":"2026-10-28T07:41:56.091432654Z","level":"WARN","msg":"database not reachable yet, retrying","service":"taskflow-api","version":"488ce875a723","component":"migrate","attempt":1,"err":"failed to connect to `user=taskflow database=taskflow`: hostname resolving error: lookup postgres.taskflow.svc.cluster.local on 10.43.0.10:53: no such host"}
+{"time":"2026-10-28T07:41:57.202193266Z","level":"WARN","msg":"database not reachable yet, retrying","service":"taskflow-api","version":"488ce875a723","component":"migrate","attempt":2,"err":"failed to connect to `user=taskflow database=taskflow`: hostname resolving error: lookup postgres.taskflow.svc.cluster.local on 10.43.0.10:53: no such host"}
+{"time":"2026-10-28T07:41:58.205167919Z","level":"WARN","msg":"database not reachable yet, retrying","service":"taskflow-api","version":"488ce875a723","component":"migrate","attempt":3,"err":"failed to connect to `user=taskflow database=taskflow`: hostname resolving error: lookup postgres.taskflow.svc.cluster.local on 10.43.0.10:53: no such host"}
+{"time":"2026-10-28T07:41:59.266959869Z","level":"WARN","msg":"database not reachable yet, retrying","service":"taskflow-api","version":"488ce875a723","component":"migrate","attempt":4,"err":"failed to connect to `user=taskflow database=taskflow`: hostname resolving error: lookup postgres.taskflow.svc.cluster.local on 10.43.0.10:53: no such host"}
+{"time":"2026-10-28T07:42:00.293383009Z","level":"WARN","msg":"database not reachable yet, retrying","service":"taskflow-api","version":"488ce875a723","component":"migrate","attempt":5,"err":"failed to connect to `user=taskflow database=taskflow`: hostname resolving error: lookup postgres.taskflow.svc.cluster.local on 10.43.0.10:53: no such host"}
+{"time":"2026-10-28T07:42:01.300922022Z","level":"WARN","msg":"database not reachable yet, retrying","service":"taskflow-api","version":"488ce875a723","component":"migrate","attempt":6,"err":"failed to connect to `user=taskflow database=taskflow`: hostname resolving error: lookup postgres.taskflow.svc.cluster.local on 10.43.0.10:53: no such host"}
+{"time":"2026-10-28T07:42:02.307423716Z","level":"WARN","msg":"database not reachable yet, retrying","service":"taskflow-api","version":"488ce875a723","component":"migrate","attempt":7,"err":"failed to connect to `user=taskflow database=taskflow`: hostname resolving error: lookup postgres.taskflow.svc.cluster.local on 10.43.0.10:53: no such host"}
+{"time":"2026-10-28T07:42:03.312581706Z","level":"WARN","msg":"database not reachable yet, retrying","service":"taskflow-api","version":"488ce875a723","component":"migrate","attempt":8,"err":"failed to connect to `user=taskflow database=taskflow`: hostname resolving error: lookup postgres.taskflow.svc.cluster.local on 10.43.0.10:53: no such host"}
+{"time":"2026-10-28T07:42:04.31767343Z","level":"WARN","msg":"database not reachable yet, retrying","service":"taskflow-api","version":"488ce875a723","component":"migrate","attempt":9,"err":"failed to connect to `user=taskflow database=taskflow`: hostname resolving error: lookup postgres.taskflow.svc.cluster.local on 10.43.0.10:53: no such host"}
+{"time":"2026-10-28T07:42:05.320871822Z","level":"WARN","msg":"database not reachable yet, retrying","service":"taskflow-api","version":"488ce875a723","component":"migrate","attempt":10,"err":"failed to connect to `user=taskflow database=taskflow`: hostname resolving error: lookup postgres.taskflow.svc.cluster.local on 10.43.0.10:53: no such host"}
+{"time":"2026-10-28T07:42:06.326951952Z","level":"WARN","msg":"database not reachable yet, retrying","service":"taskflow-api","version":"488ce875a723","component":"migrate","attempt":11,"err":"failed to connect to `user=taskflow database=taskflow`: hostname resolving error: lookup postgres.taskflow.svc.cluster.local on 10.43.0.10:53: no such host"}
+{"time":"2026-10-28T07:42:07.331721983Z","level":"WARN","msg":"database not reachable yet, retrying","service":"taskflow-api","version":"488ce875a723","component":"migrate","attempt":12,"err":"failed to connect to `user=taskflow database=taskflow`: hostname resolving error: lookup postgres.taskflow.svc.cluster.local on 10.43.0.10:53: no such host"}
+{"time":"2026-10-28T07:42:08.338614588Z","level":"WARN","msg":"database not reachable yet, retrying","service":"taskflow-api","version":"488ce875a723","component":"migrate","attempt":13,"err":"failed to connect to `user=taskflow database=taskflow`: hostname resolving error: lookup postgres.taskflow.svc.cluster.local on 10.43.0.10:53: no such host"}
+{"time":"2026-10-28T07:42:09.345891393Z","level":"WARN","msg":"database not reachable yet, retrying","service":"taskflow-api","version":"488ce875a723","component":"migrate","attempt":14,"err":"failed to connect to `user=taskflow database=taskflow`: hostname resolving error: lookup postgres.taskflow.svc.cluster.local on 10.43.0.10:53: no such host"}
+{"time":"2026-10-28T07:42:10.351651216Z","level":"WARN","msg":"database not reachable yet, retrying","service":"taskflow-api","version":"488ce875a723","component":"migrate","attempt":15,"err":"failed to connect to `user=taskflow database=taskflow`: hostname resolving error: lookup postgres.taskflow.svc.cluster.local on 10.43.0.10:53: no such host"}
+{"time":"2026-10-28T07:42:11.355433566Z","level":"WARN","msg":"database not reachable yet, retrying","service":"taskflow-api","version":"488ce875a723","component":"migrate","attempt":16,"err":"failed to connect to `user=taskflow database=taskflow`: hostname resolving error: lookup postgres.taskflow.svc.cluster.local on 10.43.0.10:53: no such host"}
+{"time":"2026-10-28T07:42:12.359137027Z","level":"WARN","msg":"database not reachable yet, retrying","service":"taskflow-api","version":"488ce875a723","component":"migrate","attempt":17,"err":"failed to connect to `user=taskflow database=taskflow`: hostname resolving error: lookup postgres.taskflow.svc.cluster.local on 10.43.0.10:53: no such host"}
+{"time":"2026-10-28T07:42:13.362666308Z","level":"WARN","msg":"database not reachable yet, retrying","service":"taskflow-api","version":"488ce875a723","component":"migrate","attempt":18,"err":"failed to connect to `user=taskflow database=taskflow`: hostname resolving error: lookup postgres.taskflow.svc.cluster.local on 10.43.0.10:53: no such host"}
+{"time":"2026-10-28T07:42:14.368284051Z","level":"WARN","msg":"database not reachable yet, retrying","service":"taskflow-api","version":"488ce875a723","component":"migrate","attempt":19,"err":"failed to connect to `user=taskflow database=taskflow`: hostname resolving error: lookup postgres.taskflow.svc.cluster.local on 10.43.0.10:53: no such host"}
+{"time":"2026-10-28T07:42:15.373084528Z","level":"WARN","msg":"database not reachable yet, retrying","service":"taskflow-api","version":"488ce875a723","component":"migrate","attempt":20,"err":"failed to connect to `user=taskflow database=taskflow`: hostname resolving error: lookup postgres.taskflow.svc.cluster.local on 10.43.0.10:53: no such host"}
+{"time":"2026-10-28T07:42:16.377149422Z","level":"WARN","msg":"database not reachable yet, retrying","service":"taskflow-api","version":"488ce875a723","component":"migrate","attempt":21,"err":"failed to connect to `user=taskflow database=taskflow`: hostname resolving error: lookup postgres.taskflow.svc.cluster.local on 10.43.0.10:53: no such host"}
+{"time":"2026-10-28T07:42:17.397375468Z","level":"WARN","msg":"database not reachable yet, retrying","service":"taskflow-api","version":"488ce875a723","component":"migrate","attempt":22,"err":"failed to connect to `user=taskflow database=taskflow`: hostname resolving error: lookup postgres.taskflow.svc.cluster.local on 10.43.0.10:53: no such host"}
+{"time":"2026-10-28T07:42:18.405523357Z","level":"WARN","msg":"database not reachable yet, retrying","service":"taskflow-api","version":"488ce875a723","component":"migrate","attempt":23,"err":"failed to connect to `user=taskflow database=taskflow`: hostname resolving error: lookup postgres.taskflow.svc.cluster.local on 10.43.0.10:53: no such host"}
+{"time":"2026-10-28T07:42:19.409161191Z","level":"WARN","msg":"database not reachable yet, retrying","service":"taskflow-api","version":"488ce875a723","component":"migrate","attempt":24,"err":"failed to connect to `user=taskflow database=taskflow`: hostname resolving error: lookup postgres.taskflow.svc.cluster.local on 10.43.0.10:53: no such host"}
+{"time":"2026-10-28T07:42:20.415140419Z","level":"WARN","msg":"database not reachable yet, retrying","service":"taskflow-api","version":"488ce875a723","component":"migrate","attempt":25,"err":"failed to connect to `user=taskflow database=taskflow`: hostname resolving error: lookup postgres.taskflow.svc.cluster.local on 10.43.0.10:53: no such host"}
+{"time":"2026-10-28T07:42:21.42984591Z","level":"INFO","msg":"database reachable","service":"taskflow-api","version":"488ce875a723","component":"migrate","attempts":26}
+{"time":"2026-10-28T07:42:21.47505436Z","level":"INFO","msg":"migration applied","service":"taskflow-api","version":"488ce875a723","component":"migrate","migration":1,"file":"00001_create_tasks.sql","direction":"up","duration":"16.019159ms"}
+{"time":"2026-10-28T07:42:21.475660945Z","level":"INFO","msg":"schema version","service":"taskflow-api","version":"488ce875a723","component":"migrate","schema_version":1}
+deploy: phase 2/2 - API, frontend and route
+namespace/taskflow unchanged
+secret/postgres-credentials-8cmcd9f765 unchanged
+service/api created
+service/frontend created
+service/postgres unchanged
+deployment.apps/api created
+deployment.apps/frontend created
+statefulset.apps/postgres configured
+poddisruptionbudget.policy/api created
+poddisruptionbudget.policy/frontend created
+job.batch/migrate unchanged
+httproute.gateway.networking.k8s.io/taskflow created
+Waiting for deployment "api" rollout to finish: 0 of 2 updated replicas are available...
+Waiting for deployment "api" rollout to finish: 1 of 2 updated replicas are available...
+deployment "api" successfully rolled out
+Waiting for deployment "frontend" rollout to finish: 0 of 2 updated replicas are available...
+Waiting for deployment "frontend" rollout to finish: 1 of 2 updated replicas are available...
+deployment "frontend" successfully rolled out
+httproute.gateway.networking.k8s.io/taskflow condition met
+NAME                       READY   UP-TO-DATE   AVAILABLE   AGE   CONTAINERS   IMAGES                                                                                                                                              SELECTOR
+deployment.apps/api        2/2     2            2           31s   api          ghcr.io/tavoa2/taskflow-api:488ce875a723eab96b47b2634e37be8b461c7f18@sha256:618ccec89ee42d0090f1566dbf9f8d44475b317ab8967d40274f0ce9369e598e        app.kubernetes.io/name=api
+deployment.apps/frontend   2/2     2            2           31s   frontend     ghcr.io/tavoa2/taskflow-frontend:488ce875a723eab96b47b2634e37be8b461c7f18@sha256:a4f5893154f60385efb943ad3f30c6fe4c5e1853c8415c99b5d06abd3aa9c9c6   app.kubernetes.io/name=frontend
+NAME                        READY   AGE    CONTAINERS   IMAGES
+statefulset.apps/postgres   1/1     2m7s   postgres     postgres:18.6-alpine3.24@sha256:10a5c69a83035ab5239f5620d708520e8b28f5aa1f2b20143e6024532edadfb5
+NAME                            READY   STATUS      RESTARTS   AGE    IP           NODE                    NOMINATED NODE   READINESS GATES
+pod/api-946cb9848-cp46m         1/1     Running     0          31s    10.42.1.7    k3d-taskflow-agent-1    <none>           <none>
+pod/api-946cb9848-dhd76         1/1     Running     0          31s    10.42.0.10   k3d-taskflow-server-0   <none>           <none>
+pod/frontend-7b7dfc9794-lgqpl   1/1     Running     0          31s    10.42.0.11   k3d-taskflow-server-0   <none>           <none>
+pod/frontend-7b7dfc9794-wjkwj   1/1     Running     0          31s    10.42.2.5    k3d-taskflow-agent-0    <none>           <none>
+pod/migrate-9w8mc               0/1     Error       0          2m7s   10.42.0.6    k3d-taskflow-server-0   <none>           <none>
+pod/migrate-s8smf               0/1     Completed   0          76s    10.42.0.9    k3d-taskflow-server-0   <none>           <none>
+pod/postgres-0                  1/1     Running     0          2m6s   10.42.0.8    k3d-taskflow-server-0   <none>           <none>
+NAME                                    STATUS   VOLUME                                     CAPACITY   ACCESS MODES   STORAGECLASS   VOLUMEATTRIBUTESCLASS   AGE    VOLUMEMODE
+persistentvolumeclaim/data-postgres-0   Bound    pvc-77043a79-4fa9-47f3-90a1-6264bc35d67c   1Gi        RWO            local-path     <unset>                 2m6s   Filesystem
+NAME                STATUS     COMPLETIONS   DURATION   AGE    CONTAINERS   IMAGES                                                                                                                                         SELECTOR
+job.batch/migrate   Complete   1/1           92s        2m7s   migrate      ghcr.io/tavoa2/taskflow-api:488ce875a723eab96b47b2634e37be8b461c7f18@sha256:618ccec89ee42d0090f1566dbf9f8d44475b317ab8967d40274f0ce9369e598e   batch.kubernetes.io/controller-uid=17f2ba92-0151-4e58-944d-e30040907eb4
+NAME                                  MIN AVAILABLE   MAX UNAVAILABLE   ALLOWED DISRUPTIONS   AGE
+poddisruptionbudget.policy/api        1               N/A               1                     31s
+poddisruptionbudget.policy/frontend   1               N/A               1                     31s
+NAME                                           HOSTNAMES   AGE
+httproute.gateway.networking.k8s.io/taskflow               31s
+
+================================================================ baseline.log
+./scripts/disruption-test.sh baseline
+disruption-test: baseline, load 50 req/s for 90s, started at 07:43:21
+disruption-test: baseline finished at 07:43:31
+  █ THRESHOLDS 
+    dropped_iterations
+    ✓ 'count==0' count=0
+    http_req_duration
+    ✓ 'p(99)<1000' p(99)=65.28ms
+    non_2xx
+    ✓ 'count==0' count=0
+  █ TOTAL RESULTS 
+    CUSTOM
+    non_2xx........................: 0      0/s
+    HTTP
+    http_req_duration..............: p(50)=2.32ms p(95)=6.01ms p(99)=65.28ms max=594.74ms
+      { expected_response:true }...: p(50)=2.32ms p(95)=6.01ms p(99)=65.28ms max=594.74ms
+    http_req_failed................: 0.00%  0 out of 4501
+    http_reqs......................: 4501   49.999021/s
+    EXECUTION
+    dropped_iterations.............: 0      0/s
+    iteration_duration.............: p(50)=2.55ms p(95)=7.09ms p(99)=70.52ms max=636.23ms
+    iterations.....................: 4501   49.999021/s
+    vus............................: 1      min=0         max=5  
+    vus_max........................: 150    min=150       max=150
+    NETWORK
+    data_received..................: 6.9 MB 77 kB/s
+    data_sent......................: 373 kB 4.1 kB/s
+disruption-test: baseline PASS
+
+================================================================ rollout-api.log
+./scripts/disruption-test.sh rollout-api
+disruption-test: rollout-api, load 50 req/s for 90s, started at 07:15:55
+deployment.apps/api restarted
+Waiting for deployment "api" rollout to finish: 1 out of 2 new replicas have been updated...
+Waiting for deployment "api" rollout to finish: 1 out of 2 new replicas have been updated...
+Waiting for deployment "api" rollout to finish: 1 out of 2 new replicas have been updated...
+Waiting for deployment "api" rollout to finish: 1 old replicas are pending termination...
+Waiting for deployment "api" rollout to finish: 1 old replicas are pending termination...
+deployment "api" successfully rolled out
+disruption-test: rollout-api finished at 07:16:11
+  █ THRESHOLDS 
+    dropped_iterations
+    ✓ 'count==0' count=0
+    http_req_duration
+    ✓ 'p(99)<1000' p(99)=18.46ms
+    non_2xx
+    ✓ 'count==0' count=0
+  █ TOTAL RESULTS 
+    CUSTOM
+    non_2xx........................: 0      0/s
+    HTTP
+    http_req_duration..............: p(50)=3.25ms p(95)=7.9ms  p(99)=18.46ms max=705.22ms
+      { expected_response:true }...: p(50)=3.25ms p(95)=7.9ms  p(99)=18.46ms max=705.22ms
+    http_req_failed................: 0.00%  0 out of 4500
+    http_reqs......................: 4500   50.006067/s
+    EXECUTION
+    dropped_iterations.............: 0      0/s
+    iteration_duration.............: p(50)=3.62ms p(95)=8.56ms p(99)=19.68ms max=705.42ms
+    iterations.....................: 4500   50.006067/s
+    vus............................: 1      min=0         max=1  
+    vus_max........................: 150    min=150       max=150
+    NETWORK
+    data_received..................: 6.9 MB 77 kB/s
+    data_sent......................: 373 kB 4.1 kB/s
+disruption-test: rollout-api PASS
+
+================================================================ rollout-frontend.log
+./scripts/disruption-test.sh rollout-frontend
+disruption-test: rollout-frontend, load 50 req/s for 90s, started at 07:17:30
+deployment.apps/frontend restarted
+Waiting for deployment "frontend" rollout to finish: 1 out of 2 new replicas have been updated...
+Waiting for deployment "frontend" rollout to finish: 1 out of 2 new replicas have been updated...
+Waiting for deployment "frontend" rollout to finish: 1 out of 2 new replicas have been updated...
+Waiting for deployment "frontend" rollout to finish: 1 old replicas are pending termination...
+Waiting for deployment "frontend" rollout to finish: 1 old replicas are pending termination...
+deployment "frontend" successfully rolled out
+disruption-test: rollout-frontend finished at 07:17:55
+  █ THRESHOLDS 
+    dropped_iterations
+    ✓ 'count==0' count=0
+    http_req_duration
+    ✓ 'p(99)<1000' p(99)=126.37ms
+    non_2xx
+    ✓ 'count==0' count=0
+  █ TOTAL RESULTS 
+    CUSTOM
+    non_2xx........................: 0      0/s
+    HTTP
+    http_req_duration..............: p(50)=3.48ms p(95)=21.91ms p(99)=126.37ms max=821.86ms
+      { expected_response:true }...: p(50)=3.48ms p(95)=21.91ms p(99)=126.37ms max=821.86ms
+    http_req_failed................: 0.00%  0 out of 4501
+    http_reqs......................: 4501   50.017498/s
+    EXECUTION
+    dropped_iterations.............: 0      0/s
+    iteration_duration.............: p(50)=3.83ms p(95)=24.1ms  p(99)=129.83ms max=822.04ms
+    iterations.....................: 4501   50.017498/s
+    vus............................: 0      min=0         max=6  
+    vus_max........................: 150    min=150       max=150
+    NETWORK
+    data_received..................: 6.8 MB 75 kB/s
+    data_sent......................: 374 kB 4.2 kB/s
+disruption-test: rollout-frontend PASS
+
+================================================================ drain_k3d-taskflow-agent-0.log
+./scripts/disruption-test.sh drain k3d-taskflow-agent-0
+disruption-test: drain, load 50 req/s for 90s, started at 07:27:18
+node/k3d-taskflow-agent-0 cordoned
+Warning: ignoring DaemonSet-managed Pods: kube-system/svclb-envoy-gateway-public-1e7f3513-d45e606f-k6kvv
+evicting pod taskflow/frontend-6755cf696-nfjb5
+evicting pod envoy-gateway-system/envoy-gateway-public-1e7f3513-557886dbcc-k4c9g
+evicting pod kube-system/metrics-server-6dc596dfb8-78twj
+evicting pod taskflow/api-7cb7b86bdb-79bw2
+evicting pod kube-system/coredns-7cfb7bc9c7-54lk6
+pod/coredns-7cfb7bc9c7-54lk6 evicted
+pod/metrics-server-6dc596dfb8-78twj evicted
+pod/api-7cb7b86bdb-79bw2 evicted
+pod/envoy-gateway-public-1e7f3513-557886dbcc-k4c9g evicted
+pod/frontend-6755cf696-nfjb5 evicted
+node/k3d-taskflow-agent-0 drained
+deployment "api" successfully rolled out
+deployment "frontend" successfully rolled out
+node/k3d-taskflow-agent-0 uncordoned
+disruption-test: drain finished at 07:28:05
+  █ THRESHOLDS 
+    dropped_iterations
+    ✗ 'count==0' count=23
+    http_req_duration
+    ✗ 'p(99)<1000' p(99)=1.2s
+    non_2xx
+    ✓ 'count==0' count=0
+  █ TOTAL RESULTS 
+    CUSTOM
+    non_2xx........................: 0      0/s
+    HTTP
+    http_req_duration..............: p(50)=3.2ms  p(95)=59.51ms p(99)=1.2s  max=4.06s
+      { expected_response:true }...: p(50)=3.2ms  p(95)=59.51ms p(99)=1.2s  max=4.06s
+    http_req_failed................: 0.00%  0 out of 4478
+    http_reqs......................: 4478   49.754759/s
+    EXECUTION
+    dropped_iterations.............: 23     0.255551/s
+    iteration_duration.............: p(50)=3.53ms p(95)=66.66ms p(99)=1.53s max=4.06s
+    iterations.....................: 4478   49.754759/s
+    vus............................: 0      min=0         max=147
+    vus_max........................: 156    min=150       max=156
+    NETWORK
+    data_received..................: 6.8 MB 76 kB/s
+    data_sent......................: 372 kB 4.1 kB/s
+time="2026-10-28T07:28:55Z" level=error msg="thresholds on metrics 'dropped_iterations, http_req_duration' have been crossed"
+disruption-test: drain FAIL
+make: *** [Makefile:87: disruption-test] Error 99
+
+================================================================ drain_k3d-taskflow-agent-1.log
+./scripts/disruption-test.sh drain k3d-taskflow-agent-1
+disruption-test: drain, load 50 req/s for 90s, started at 07:28:57
+node/k3d-taskflow-agent-1 cordoned
+Warning: ignoring DaemonSet-managed Pods: kube-system/svclb-envoy-gateway-public-1e7f3513-d45e606f-xsrtz
+evicting pod taskflow/frontend-6755cf696-hmgwz
+evicting pod kube-system/coredns-7cfb7bc9c7-v5h2j
+evicting pod envoy-gateway-system/envoy-gateway-6d678b9fff-97wss
+evicting pod envoy-gateway-system/envoy-gateway-public-1e7f3513-557886dbcc-fjz6h
+evicting pod kube-system/metrics-server-6dc596dfb8-z7c5q
+evicting pod taskflow/api-7cb7b86bdb-f8qrp
+pod/coredns-7cfb7bc9c7-v5h2j evicted
+pod/envoy-gateway-6d678b9fff-97wss evicted
+pod/metrics-server-6dc596dfb8-z7c5q evicted
+pod/api-7cb7b86bdb-f8qrp evicted
+pod/frontend-6755cf696-hmgwz evicted
+pod/envoy-gateway-public-1e7f3513-557886dbcc-fjz6h evicted
+node/k3d-taskflow-agent-1 drained
+deployment "api" successfully rolled out
+deployment "frontend" successfully rolled out
+node/k3d-taskflow-agent-1 uncordoned
+disruption-test: drain finished at 07:29:32
+  █ THRESHOLDS 
+    dropped_iterations
+    ✓ 'count==0' count=0
+    http_req_duration
+    ✓ 'p(99)<1000' p(99)=159.43ms
+    non_2xx
+    ✓ 'count==0' count=0
+  █ TOTAL RESULTS 
+    CUSTOM
+    non_2xx........................: 0      0/s
+    HTTP
+    http_req_duration..............: p(50)=3.2ms  p(95)=33.3ms  p(99)=159.43ms max=558.1ms 
+      { expected_response:true }...: p(50)=3.2ms  p(95)=33.3ms  p(99)=159.43ms max=558.1ms 
+    http_req_failed................: 0.00%  0 out of 4501
+    http_reqs......................: 4501   50.012731/s
+    EXECUTION
+    dropped_iterations.............: 0      0/s
+    iteration_duration.............: p(50)=3.57ms p(95)=35.38ms p(99)=159.55ms max=558.15ms
+    iterations.....................: 4501   50.012731/s
+    vus............................: 1      min=0         max=12 
+    vus_max........................: 150    min=150       max=150
+    NETWORK
+    data_received..................: 7.0 MB 77 kB/s
+    data_sent......................: 373 kB 4.1 kB/s
+disruption-test: drain PASS
+
+================================================================ red-rollout-frontend-no-prestop.log
+./scripts/disruption-test.sh rollout-frontend
+disruption-test: rollout-frontend, load 50 req/s for 90s, started at 07:31:56
+deployment.apps/frontend restarted
+Waiting for deployment "frontend" rollout to finish: 1 out of 2 new replicas have been updated...
+Waiting for deployment "frontend" rollout to finish: 1 out of 2 new replicas have been updated...
+Waiting for deployment "frontend" rollout to finish: 1 out of 2 new replicas have been updated...
+time="2026-10-28T07:32:23Z" level=warning msg="non-2xx 503 / at 2026-10-28T07:32:23.211Z " source=console
+time="2026-10-28T07:32:23Z" level=warning msg="non-2xx 503 / at 2026-10-28T07:32:23.215Z " source=console
+time="2026-10-28T07:32:23Z" level=warning msg="non-2xx 503 / at 2026-10-28T07:32:23.243Z " source=console
+time="2026-10-28T07:32:23Z" level=warning msg="non-2xx 503 / at 2026-10-28T07:32:23.266Z " source=console
+time="2026-10-28T07:32:23Z" level=warning msg="non-2xx 503 /api/v1/tasks at 2026-10-28T07:32:23.284Z " source=console
+time="2026-10-28T07:32:23Z" level=warning msg="non-2xx 503 /api/v1/tasks at 2026-10-28T07:32:23.326Z " source=console
+Waiting for deployment "frontend" rollout to finish: 1 old replicas are pending termination...
+time="2026-10-28T07:32:23Z" level=warning msg="non-2xx 503 / at 2026-10-28T07:32:23.427Z " source=console
+time="2026-10-28T07:32:23Z" level=warning msg="non-2xx 503 / at 2026-10-28T07:32:23.465Z " source=console
+Waiting for deployment "frontend" rollout to finish: 1 old replicas are pending termination...
+deployment "frontend" successfully rolled out
+disruption-test: rollout-frontend finished at 07:32:32
+  █ THRESHOLDS 
+    dropped_iterations
+    ✗ 'count==0' count=2
+    http_req_duration
+    ✗ 'p(99)<1000' p(99)=3.11s
+    non_2xx
+    ✗ 'count==0' count=29
+  █ TOTAL RESULTS 
+    CUSTOM
+    non_2xx........................: 29     0.322261/s
+    HTTP
+    http_req_duration..............: p(50)=4.02ms p(95)=360.25ms p(99)=3.11s max=4.91s
+      { expected_response:true }...: p(50)=4.03ms p(95)=366.17ms p(99)=3.12s max=4.91s
+    http_req_failed................: 0.64%  29 out of 4502
+    http_reqs......................: 4502   50.028197/s
+    EXECUTION
+    dropped_iterations.............: 2      0.022225/s
+    iteration_duration.............: p(50)=4.45ms p(95)=374.04ms p(99)=3.11s max=4.91s
+    iterations.....................: 4502   50.028197/s
+    vus............................: 0      min=0          max=133
+    vus_max........................: 151    min=150        max=151
+    NETWORK
+    data_received..................: 6.8 MB 76 kB/s
+    data_sent......................: 374 kB 4.2 kB/s
+time="2026-10-28T07:33:33Z" level=error msg="thresholds on metrics 'dropped_iterations, http_req_duration, non_2xx' have been crossed"
+disruption-test: rollout-frontend FAIL
+make: *** [Makefile:87: disruption-test] Error 99
+    ... 21 more non-2xx/failed-request lines omitted
+
+================================================================ checks.log
+=== A. persistence across postgres pod deletion (07:31:16)
+created /api/v1/tasks/01a1816b-a050-7034-942f-a9c3d9191357
+pod "postgres-0" deleted from taskflow namespace
+pod/postgres-0 condition met
+pod uid changed: yes  pvc: Bound pvc-ad31806c-049a-4460-9d87-12a411a1d75a
+GET /api/v1/tasks/01a1816b-a050-7034-942f-a9c3d9191357 -> {"title":"survives pod deletion","status":"todo"} after 0s
+api-7cb7b86bdb-95925   0
+api-7cb7b86bdb-w5jzd   0
+=== B. securityContext audit of every pod in taskflow
+POD                       nonRoot  UID    roRootFS  privEsc  drop  seccomp
+api-7cb7b86bdb-95925      true     65532  true      false    ALL   RuntimeDefault
+api-7cb7b86bdb-w5jzd      true     65532  true      false    ALL   RuntimeDefault
+frontend-6755cf696-c75pq  true     101    true      false    ALL   RuntimeDefault
+frontend-6755cf696-ctwnl  true     101    true      false    ALL   RuntimeDefault
+postgres-0                true     70     true      false    ALL   RuntimeDefault
+service account tokens mounted: 0
+=== C. RED: frontend without preStop -> rollout under load must show errors
+    http_req_failed................: 0.64%  29 out of 4502
+disruption-test: rollout-frontend FAIL
+=== D. GREEN again: restore from Git (make deploy)
+deployment "api" successfully rolled out
+deployment "frontend" successfully rolled out
+preStop restored: 5s
+smoke-test: 20 passed, 0 failed

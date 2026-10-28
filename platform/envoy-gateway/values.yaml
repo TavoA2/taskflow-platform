@@ -4,3 +4,19 @@
 # The chart also installs the Gateway API CRDs it was tested with (v1.6.1) and Envoy Gateway's own CRDs.
 crds:
   enabled: true
+
+# Two controllers (leader election picks one active) spread across nodes, and at most one evicted at a time.
+# With one replica, draining its node left the Envoy proxies without a control plane: a proxy that was itself
+# draining kept routing to backends that were already gone and answered 503 for ~17 s (Phase 3 drain test).
+podDisruptionBudget:
+  minAvailable: 1
+deployment:
+  replicas: 2
+  pod:
+    topologySpreadConstraints:
+      - maxSkew: 1
+        topologyKey: kubernetes.io/hostname
+        whenUnsatisfiable: ScheduleAnyway
+        labelSelector:
+          matchLabels:
+            control-plane: envoy-gateway

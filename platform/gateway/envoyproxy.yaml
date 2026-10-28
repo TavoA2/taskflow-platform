@@ -1,0 +1,25 @@
+# Data-plane settings for Gateways of class "envoy". The proxy is the single entry point for all traffic,
+# so it must not be a single replica: draining or losing its node would cut every request (found by the
+# Phase 3 drain test). Two replicas, spread across nodes, and at most one evicted at a time.
+apiVersion: gateway.envoyproxy.io/v1alpha1
+kind: EnvoyProxy
+metadata:
+  name: envoy
+  namespace: gateway
+spec:
+  provider:
+    type: Kubernetes
+    kubernetes:
+      envoyDeployment:
+        replicas: 2
+        pod:
+          topologySpreadConstraints:
+            - maxSkew: 1
+              topologyKey: kubernetes.io/hostname
+              whenUnsatisfiable: ScheduleAnyway
+              labelSelector:
+                matchLabels:
+                  app.kubernetes.io/component: proxy
+                  gateway.envoyproxy.io/owning-gateway-name: public
+      envoyPDB:
+        minAvailable: 1

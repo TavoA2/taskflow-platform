@@ -37,6 +37,10 @@ identically. The k3s image is pinned explicitly in that config.
   - `local-path` volumes live on one node's disk: data survives pod restarts but not node loss. This is
     **not** highly available storage, and no HA claim is made from local tests.
   - All nodes share one host; failure tests (Phase 7) prove application behaviour, not infrastructure resilience.
+  - k3s runs CoreDNS as a single replica. `make platform-install` scales it to 2 and adds a PDB; the k3s
+    manifest sets no replica count, so the scale survives k3s restarts (observed in Phase 3).
+  - Other workloads on the same host change results: with a second k3d cluster running, CPU saturation made the
+    k3s server exit (embedded SQLite commit failure). Disruption tests require an otherwise idle host.
   - Differences from EKS (IAM, ALB, EBS CSI, VPC CNI) are handled only in the `aws` overlay.
 
 ## Verification

@@ -14,17 +14,9 @@ if (( ${#dirs[@]} == 0 )); then
   exit 0
 fi
 
-# Overlays read git-ignored secret files (secrets/*.env) that do not exist in CI. Render them with the
-# committed *.env.example placeholders instead; files created here are removed on exit, real ones are untouched.
-placeholders=()
-trap 'rm -f "${placeholders[@]}"' EXIT
-while IFS= read -r example; do
-  real=${example%.example}
-  if [[ ! -f $real ]]; then
-    cp "$example" "$real"
-    placeholders+=("$real")
-  fi
-done < <(find gitops -path '*/secrets/*.env.example' 2>/dev/null)
+# shellcheck source=lib/render-overlay.sh
+source scripts/lib/render-overlay.sh
+use_placeholder_secrets
 
 failed=0
 for dir in "${dirs[@]}"; do

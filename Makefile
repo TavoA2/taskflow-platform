@@ -14,13 +14,14 @@ GITLEAKS_IMAGE    := ghcr.io/gitleaks/gitleaks:v8.30.1
 ACTIONLINT_IMAGE  := rhysd/actionlint:1.7.12
 KUBECONFORM_IMAGE := ghcr.io/yannh/kubeconform:v0.8.0
 KUBE_VERSION      := 1.36.0
-export KUBECONFORM_IMAGE KUBE_VERSION KUBECTX
+K6_IMAGE          := grafana/k6:2.3.0@sha256:2dd4756ec6e14e62778916e1eb850108e4b499304c02df56760fa0bdb0fba0b8
+export KUBECONFORM_IMAGE KUBE_VERSION KUBECTX K6_IMAGE
 
 # Envoy Gateway (ADR-0006). The chart installs the Gateway API CRDs it was tested with (v1.6.1).
 ENVOY_GATEWAY_CHART   := oci://docker.io/envoyproxy/gateway-helm
 ENVOY_GATEWAY_VERSION := v1.9.3
 
-.PHONY: help bootstrap secrets-scan validate ruleset ruleset-check cluster-up cluster-down cluster-status platform-install gateway-smoke local-secrets deploy
+.PHONY: help bootstrap secrets-scan validate ruleset ruleset-check cluster-up cluster-down cluster-status platform-install gateway-smoke local-secrets deploy verify-images bump-images disruption-test
 
 help: ## List available targets
 	@grep -E '^[a-zA-Z_-]+:.*## ' $(MAKEFILE_LIST) | awk 'BEGIN {FS = ":.*## "}; {printf "  \033[36m%-15s\033[0m %s\n", $$1, $$2}'
@@ -61,7 +62,11 @@ platform-install: ## Install Envoy Gateway (pinned chart) and the shared Gateway
 	  -f platform/envoy-gateway/values.yaml --wait --timeout 5m
 	$(KUBECTL) apply -k platform/gateway
 	$(KUBECTL) -n gateway wait gateway/public --for=condition=Programmed --timeout=180s
+	$(KUBECTL) -n envoy-gateway-system rollout status deployment -l gateway.envoyproxy.io/owning-gateway-name=public --timeout=180s
 	$(KUBECTL) -n gateway get gateway public
+	$(KUBECTL) -n kube-system scale deployment/coredns --replicas=2
+	$(KUBECTL) apply -k platform/coredns
+	$(KUBECTL) -n kube-system rollout status deployment/coredns --timeout=120s
 
 gateway-smoke: ## Route a throwaway backend through the Gateway on 127.0.0.1:8088, then remove it
 	./scripts/gateway-smoke.sh
@@ -69,5 +74,14 @@ gateway-smoke: ## Route a throwaway backend through the Gateway on 127.0.0.1:808
 local-secrets: ## Create the git-ignored local database credentials (random password) if missing
 	./scripts/local-secrets.sh
 
-deploy: ## Apply gitops/overlays/local to the local cluster and run database migrations
+deploy: ## Verify images, then apply gitops/overlays/local (data tier and migrations first, then the app)
 	./scripts/deploy.sh
+
+verify-images: ## Fail unless every overlay image is digest-pinned and TaskFlow images have CI provenance
+	./scripts/verify-images.sh
+
+bump-images: ## Point the local overlay at the images of a taskflow-app commit: make bump-images SHA=<40 chars>
+	./scripts/bump-images.sh $(SHA)
+
+disruption-test: ## Steady k6 load while disrupting: make disruption-test CASE="rollout-api|rollout-frontend|drain <node>"
+	./scripts/disruption-test.sh $(CASE)
