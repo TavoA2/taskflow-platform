@@ -33,7 +33,7 @@ identically. The k3s image is pinned explicitly in that config.
   support; the same distribution (k3s) can later run on EC2, keeping the `local` and `ec2` overlays close.
 - Negative / limitations (documented, not hidden):
   - k3s bundles components that EKS does not (Traefik, ServiceLB, local-path provisioner, embedded SQLite/etcd).
-    Which bundled components are disabled is decided in Phase 3 (see planned ADR-0005 for Gateway API).
+    Which bundled components are disabled is decided in Phase 3 (see the planned Gateway API ADR).
   - `local-path` volumes live on one node's disk: data survives pod restarts but not node loss. This is
     **not** highly available storage, and no HA claim is made from local tests.
   - All nodes share one host; failure tests (Phase 7) prove application behaviour, not infrastructure resilience.

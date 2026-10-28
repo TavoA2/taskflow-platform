@@ -32,7 +32,7 @@ Statuses are explicit: **Implemented** (exists in the repo), **Tested** (verifie
 |-------|-------|--------|
 | 0 | Repos, conventions, pinned tools, ADR-0001/0002, `make bootstrap` | Implemented, Tested ([evidence](docs/test-results/phase-0-workstation.md)) |
 | 1 | App in containers (compose, migrations, tests) | Implemented, Tested ([evidence](docs/test-results/phase-1-app-in-containers.md)) |
-| 2 | App CI (scan, SBOM, GHCR) | Planned |
+| 2 | App CI (scan, SBOM, GHCR) | Implemented, Tested ([evidence](docs/test-results/phase-2-app-ci.md), [ADR-0005](docs/adr/0005-app-ci-and-supply-chain.md)) |
 | 3 | Kubernetes on k3d (workloads, Gateway API, probes) | Planned |
 | 4 | GitOps with ArgoCD | Planned |
 | 5 | Security baseline (RBAC, NetworkPolicies, secrets) | Planned |
@@ -50,7 +50,8 @@ Statuses are explicit: **Implemented** (exists in the repo), **Tested** (verifie
 | `.tool-versions` | Pinned tool versions (asdf/mise format) | Implemented |
 | `gitops/` | Manifests, ArgoCD Applications, overlays `local` / `ec2` / `aws` | Planned (Phase 3-4) |
 | `terraform/` | Modules and `envs/` | Planned (Phase 8) |
-| `docs/test-results/` | Test evidence per phase | Implemented (Phase 0) |
+| `docs/test-results/` | Test evidence per phase | Implemented (Phases 0-2) |
+| `.github/rulesets/main.json` | Branch protection of `main` as code (`make ruleset`, `make ruleset-check`) | Implemented |
 | `docs/runbooks/` | Operational runbooks | Planned (Phase 7) |
 
 ## Prerequisites
@@ -68,9 +69,13 @@ Work inside the WSL filesystem (`~/code/...`), not under `/mnt/c`.
 ## Usage
 
 ```bash
-make help        # list targets
-make bootstrap   # verify the workstation; exit code 0 = READY
+make help          # list targets
+make bootstrap     # verify the workstation; exit code 0 = READY
+make secrets-scan  # gitleaks over the full git history
+make ruleset-check # fail if the live branch protection differs from .github/rulesets/main.json
 ```
+
+Changes to `main` go through pull requests only (squash merge, no force push, no bypass).
 
 ## Conventions
 
